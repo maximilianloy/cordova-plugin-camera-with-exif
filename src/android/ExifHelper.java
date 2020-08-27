@@ -23,7 +23,12 @@ import java.io.IOException;
 import android.media.ExifInterface;
 
 public class ExifHelper {
-
+     class GPSdata {
+         private String Latitude = null;
+         private String LatitudeRef = null;
+         private String Longitude = null;
+         private String LongitudeRef = null;
+     }
 
      private String aperture = null;
      private String datetime = null;
@@ -45,6 +50,7 @@ public class ExifHelper {
      private String orientation = null;
      private String whiteBalance = null;
 
+    private GPSdata GPS = new GPSdata();
 
      private ExifInterface inFile = null;
      private ExifInterface outFile = null;
@@ -72,18 +78,19 @@ public class ExifHelper {
     /**
      * Reads all the EXIF data from the input file.
      */
-     public void readExifData() {
-        float[] latLng = new float[2];
-        inFile.getLatLong(latLng);
-        this.gpsLatitude = String.valueOf(latLng[0]);
-        this.gpsLongitude = String.valueOf(latLng[1]);
-        this.gpsAltitude = String.valueOf(inFile.getAltitude(0));
+    public void readExifData() {
         this.aperture = inFile.getAttribute(ExifInterface.TAG_APERTURE);
         this.datetime = inFile.getAttribute(ExifInterface.TAG_DATETIME);
         this.exposureTime = inFile.getAttribute(ExifInterface.TAG_EXPOSURE_TIME);
         this.flash = inFile.getAttribute(ExifInterface.TAG_FLASH);
         this.focalLength = inFile.getAttribute(ExifInterface.TAG_FOCAL_LENGTH);
+        this.gpsAltitude = inFile.getAttribute(ExifInterface.TAG_GPS_ALTITUDE);
+        this.gpsAltitudeRef = inFile.getAttribute(ExifInterface.TAG_GPS_ALTITUDE_REF);
         this.gpsDateStamp = inFile.getAttribute(ExifInterface.TAG_GPS_DATESTAMP);
+        this.gpsLatitude = inFile.getAttribute(ExifInterface.TAG_GPS_LATITUDE);
+        this.gpsLatitudeRef = inFile.getAttribute(ExifInterface.TAG_GPS_LATITUDE_REF);
+        this.gpsLongitude = inFile.getAttribute(ExifInterface.TAG_GPS_LONGITUDE);
+        this.gpsLongitudeRef = inFile.getAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF);
         this.gpsProcessingMethod = inFile.getAttribute(ExifInterface.TAG_GPS_PROCESSING_METHOD);
         this.gpsTimestamp = inFile.getAttribute(ExifInterface.TAG_GPS_TIMESTAMP);
         this.iso = inFile.getAttribute(ExifInterface.TAG_ISO);
@@ -91,6 +98,18 @@ public class ExifHelper {
         this.model = inFile.getAttribute(ExifInterface.TAG_MODEL);
         this.orientation = inFile.getAttribute(ExifInterface.TAG_ORIENTATION);
         this.whiteBalance = inFile.getAttribute(ExifInterface.TAG_WHITE_BALANCE);
+
+        // Add in the iOS-style EXIF tags too (these will not be written back to file if that's happening)
+        if ((this.gpsLatitude != null) && (this.gpsLatitudeRef != null) && (this.gpsLongitude != null) && (this.gpsLongitudeRef != null)) {
+            float[] latLng = new float[2];
+            inFile.getLatLong(latLng);
+            // getLatLong returns negative numbers for S/W but, to mimic iOS behaviour, we need to reverse those
+            // as the consumer needs to use LatitudeRef and LongitudeRef to invert them
+            this.GPS.Latitude = String.valueOf(Math.abs(latLng[0]));
+            this.GPS.Longitude = String.valueOf(Math.abs(latLng[1]));
+            this.GPS.LatitudeRef = this.gpsLatitudeRef;
+            this.GPS.LongitudeRef = this.gpsLongitudeRef;
+        }
     }
 
 
